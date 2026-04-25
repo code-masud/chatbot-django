@@ -1,8 +1,14 @@
 from django.http import JsonResponse
 import random
+from django.shortcuts import render
+
+
+def home(request):
+    return render(request, 'chatbot/index.html')
+
 
 def chatbot_response(request):
-    user_input = request.GET.get('message')
+    user_input = str(request.GET.get('message'))
 
     responses = {
         "hello": ["Hi there!", "Hello!", "Hey!"],
