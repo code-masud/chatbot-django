@@ -1,23 +1,39 @@
-from django.http import JsonResponse
+import os
+import json
 import random
+
+from django.http import JsonResponse
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+
+from openai import OpenAI
+
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 
 def home(request):
     return render(request, 'chatbot/index.html')
 
 
+@csrf_exempt
 def chatbot_response(request):
-    user_input = str(request.GET.get('message'))
+    if request.method == 'POST':
+        data = json.loads(request.body)
 
-    responses = {
-        "hello": ["Hi there!", "Hello!", "Hey!"],
-        "how are you": ["I'm just code, but I'm doing great!", "All good here!"],
-        "bye": ["Goodbye!", "See you later!"]
-    }
+        user_message = str(data.get('message'))
 
-    for key in responses:
-        if key in user_input.lower():
-            return JsonResponse({"response": random.choice(responses[key])})
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": user_message}
+            ]
+        )
 
-    return JsonResponse({"response": "Sorry, I don't understand that yet."})
+        bot_reply = response.choices[0].message.content
+
+        return JsonResponse({
+            'response': bot_reply
+        })
+
+    return JsonResponse({'error': 'Invalid request'})
